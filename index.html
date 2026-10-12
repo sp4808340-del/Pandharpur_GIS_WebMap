@@ -1,65 +1,1416 @@
 <!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
-        <meta name="mobile-web-app-capable" content="yes">
-        <meta name="apple-mobile-web-app-capable" content="yes">
-        <link rel="stylesheet" href="./resources/ol.css">
-        <link rel="stylesheet" href="resources/fontawesome-all.min.css">
-        <link href="resources/photon-geocoder-autocomplete.min.css" rel="stylesheet">
-        <link rel="stylesheet" href="./resources/ol-layerswitcher.css">
-        <link rel="stylesheet" href="./resources/qgis2web.css">
-        <style>
-        html, body {
-            background-color: #ffffff;
-        }
-        .ol-control > * {
-            background-color: #f8f8f8!important;
-            color: #444444!important;
-            border-radius: 0px;
-        }
-        .ol-attribution a, .gcd-gl-input::placeholder, .search-layer-input-search::placeholder {
-            color: #444444!important;
-        }
-        .search-layer-input-search {
-            background-color: #f8f8f8!important;
-        }
-        .ol-control > *:focus, .ol-control >*:hover {
-            background-color: rgba(248, 248, 248, 0.7)!important;
-        } 
-        .ol-control {
-            background-color: rgba(255,255,255,.4) !important;
-            padding: 2px !important;
-        } 
-        </style>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b1220">
+<title>Pandharpur | Urban GIS Explorer</title>
 
-        <style>
-        #map {
-            width: 715px;
-            height: 480px;
-        }
-        </style>
-        <title></title>
-    </head>
-    <body>
-        <div id="map">
-            <div id="popup" class="ol-popup">
-                <a href="#" id="popup-closer" class="ol-popup-closer"></a>
-                <div id="popup-content"></div>
-            </div>
+<link rel="stylesheet" href="./resources/ol.css">
+<link rel="stylesheet" href="./resources/fontawesome-all.min.css">
+<link rel="stylesheet" href="./resources/photon-geocoder-autocomplete.min.css">
+<link rel="stylesheet" href="./resources/ol-layerswitcher.css">
+<link rel="stylesheet" href="./resources/qgis2web.css">
+
+<style>
+:root {
+  --bg: #0b1220;
+  --panel: #111c2e;
+  --panel2: #16243a;
+  --line: #263750;
+  --text: #edf4ff;
+  --muted: #9fb0c8;
+  --teal: #42dfc2;
+  --blue: #72a7ff;
+  --shadow: 0 18px 48px rgba(0,0,0,.28);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, system-ui, sans-serif;
+}
+
+button, input { font: inherit; }
+button { cursor: pointer; }
+
+.app {
+  height: 100dvh;
+  min-height: 560px;
+  display: grid;
+  grid-template-rows: 76px 1fr;
+  overflow: hidden;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 24px;
+  background: #0e1828;
+  border-bottom: 1px solid var(--line);
+  z-index: 10;
+}
+
+.brand-mark {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  color: #06151a;
+  background: linear-gradient(135deg,var(--teal),#8cebdc);
+  font-size: 21px;
+  font-weight: 900;
+}
+
+.brand { min-width: 190px; }
+
+.brand h1 {
+  font-size: 16px;
+  margin: 0;
+  font-weight: 750;
+}
+
+.brand p {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 4px 0 0;
+}
+
+.header-search {
+  position: relative;
+  flex: 1;
+  max-width: 620px;
+  margin: auto;
+}
+
+.header-search input {
+  width: 100%;
+  height: 43px;
+  padding: 0 80px 0 42px;
+  border: 1px solid #2a3b54;
+  border-radius: 13px;
+  background: #111e31;
+  color: var(--text);
+  outline: none;
+}
+
+.header-search input:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px #42dfc21c;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 10px;
+  color: var(--muted);
+  font-size: 20px;
+}
+
+#searchBtn {
+  position: absolute;
+  right: 5px;
+  top: 5px;
+  height: 33px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--teal);
+  color: #06201c;
+  font-weight: 750;
+  font-size: 12px;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #c9d8e9;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #49df9b;
+  box-shadow: 0 0 0 4px #49df9b20;
+}
+
+.workspace {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 300px minmax(0,1fr);
+}
+
+.sidebar {
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  padding: 20px 16px;
+  overflow: auto;
+  z-index: 5;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 13px;
+}
+
+.section-head h2 {
+  font-size: 11px;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: #91a6c2;
+  margin: 0;
+}
+
+.small-btn, .icon-btn {
+  border: 1px solid #2b3d56;
+  background: #16253b;
+  color: #dce8f8;
+  border-radius: 9px;
+}
+
+.small-btn {
+  font-size: 11px;
+  padding: 7px 9px;
+}
+
+.icon-btn {
+  width: 38px;
+  height: 38px;
+  font-size: 17px;
+}
+
+.panel-card {
+  border: 1px solid #263951;
+  background: linear-gradient(145deg,#142238,#111c2d);
+  border-radius: 15px;
+  padding: 14px;
+  margin-bottom: 20px;
+}
+
+.project-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.project-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: #42dfc21a;
+  color: var(--teal);
+  display: grid;
+  place-items: center;
+  font-size: 19px;
+}
+
+.project-row strong {
+  display: block;
+  font-size: 13px;
+}
+
+.project-row span {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  margin-top: 14px;
+}
+
+.stat {
+  padding: 11px;
+  border-radius: 11px;
+  background: #0c1727;
+  border: 1px solid #24364d;
+}
+
+.stat .label {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.stat .value {
+  font-size: 19px;
+  font-weight: 750;
+  margin-top: 5px;
+}
+
+.layer-group { margin-bottom: 18px; }
+
+.group-title {
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #7f95b3;
+  margin: 0 0 9px;
+}
+
+.layer-row {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 9px;
+  border-radius: 11px;
+  border: 1px solid transparent;
+}
+
+.layer-row:hover {
+  background: #17263b;
+  border-color: #263b55;
+}
+
+.layer-symbol {
+  width: 25px;
+  height: 25px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: #21344b;
+  color: var(--teal);
+  font-size: 12px;
+}
+
+.layer-name {
+  font-size: 12px;
+  color: #e3ecf8;
+  overflow-wrap: anywhere;
+}
+
+.layer-sub {
+  font-size: 10px;
+  color: #8298b5;
+  margin-top: 3px;
+}
+
+.switch {
+  position: relative;
+  width: 32px;
+  height: 18px;
+  display: inline-block;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  inset: 0;
+  background: #40516a;
+  border-radius: 20px;
+  transition: .2s;
+}
+
+.slider:before {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  left: 3px;
+  top: 3px;
+  border-radius: 50%;
+  background: white;
+  transition: .2s;
+}
+
+.switch input:checked + .slider { background: var(--teal); }
+
+.switch input:checked + .slider:before {
+  transform: translateX(14px);
+  background: #07201c;
+}
+
+.layer-tools {
+  padding: 0 9px 9px 43px;
+  display: none;
+}
+
+.layer-tools.open { display: block; }
+
+.layer-tools label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.layer-tools input[type=range] {
+  width: 100%;
+  accent-color: var(--teal);
+}
+
+.map-area {
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+  background: #e8edf3;
+}
+
+#map {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: #e8edf3;
+}
+
+.map-toolbar {
+  position: absolute;
+  left: 18px;
+  top: 18px;
+  display: flex;
+  gap: 8px;
+  z-index: 4;
+  flex-wrap: wrap;
+}
+
+.map-chip {
+  border: 1px solid #d5deea;
+  background: rgba(255,255,255,.94);
+  color: #23344a;
+  border-radius: 11px;
+  padding: 10px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: 0 5px 20px #16263b12;
+}
+
+.map-chip:hover { background: white; }
+
+.map-bottom {
+  position: absolute;
+  left: 18px;
+  bottom: 18px;
+  z-index: 4;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.info-pill {
+  background: rgba(12,23,39,.91);
+  border: 1px solid #34465e;
+  border-radius: 11px;
+  padding: 9px 12px;
+  color: #e9f2ff;
+  font-size: 11px;
+}
+
+.info-pill span {
+  color: #91a8c7;
+  margin-right: 5px;
+}
+
+.inspector {
+  position: absolute;
+  right: 18px;
+  top: 18px;
+  width: min(350px,calc(100% - 36px));
+  max-height: calc(100% - 36px);
+  overflow: auto;
+  z-index: 6;
+  background: rgba(15,27,44,.96);
+  border: 1px solid #30445f;
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+  display: none;
+}
+
+.inspector.visible { display: block; }
+
+.inspector-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 17px 17px 13px;
+  border-bottom: 1px solid #2b3e57;
+}
+
+.eyebrow {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--teal);
+  margin-bottom: 6px;
+}
+
+.inspector h3 {
+  font-size: 16px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.inspector-body { padding: 14px 17px 18px; }
+
+.attr-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.attr {
+  background: #111f32;
+  border: 1px solid #273a53;
+  border-radius: 10px;
+  padding: 10px;
+  min-width: 0;
+}
+
+.attr.wide { grid-column: 1/-1; }
+
+.attr .key {
+  font-size: 10px;
+  color: #91a6c2;
+  margin-bottom: 5px;
+  overflow-wrap: anywhere;
+}
+
+.attr .val {
+  font-size: 12px;
+  color: #f0f6ff;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.empty-state {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #b8c7da;
+}
+
+.legend {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  z-index: 4;
+  background: rgba(255,255,255,.96);
+  color: #26374d;
+  border: 1px solid #d5deea;
+  border-radius: 13px;
+  padding: 12px 14px;
+  box-shadow: 0 8px 28px #17263b18;
+  min-width: 165px;
+}
+
+.legend h4 {
+  margin: 0 0 9px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  margin: 7px 0;
+}
+
+.legend-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  background: #38a6b7;
+  border: 1px solid #247d8c;
+}
+
+.legend-line {
+  width: 19px;
+  height: 3px;
+  border-radius: 2px;
+  background: #e9a23b;
+}
+
+.legend-building {
+  width: 11px;
+  height: 11px;
+  background: #8b93a6;
+  border-radius: 2px;
+}
+
+.legend-hospital {
+  width: 11px;
+  height: 11px;
+  background: #e45b68;
+  border-radius: 50%;
+}
+
+.mobile-menu { display: none; }
+
+.ol-control {
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+.ol-control button {
+  background: #102039 !important;
+  color: #eaf5ff !important;
+  border: 1px solid #354a66 !important;
+  border-radius: 10px !important;
+  margin: 4px !important;
+  width: 34px !important;
+  height: 34px !important;
+}
+
+.ol-control button:hover { background: #1c3552 !important; }
+
+.ol-attribution {
+  right: 8px !important;
+  bottom: 8px !important;
+  border-radius: 8px !important;
+  background: #fff !important;
+  color: #26374d !important;
+}
+
+.ol-attribution a { color: #176e78 !important; }
+
+.ol-popup { display: none; }
+
+@media(max-width:900px) {
+  .workspace { grid-template-columns: 260px minmax(0,1fr); }
+  .sidebar { padding: 16px 12px; }
+  .brand { min-width: 145px; }
+  .status { display: none; }
+}
+
+@media(max-width:680px) {
+  .app {
+    grid-template-rows: 66px 1fr;
+    min-height: 500px;
+  }
+
+  .topbar { padding: 0 12px; gap: 10px; }
+  .brand-mark { width: 37px; height: 37px; }
+  .brand h1 { font-size: 13px; }
+  .brand p { font-size: 10px; }
+
+  .header-search {
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    top: 72px;
+    max-width: none;
+    z-index: 8;
+  }
+
+  .header-search input {
+    height: 40px;
+    background: #101d30ee;
+    box-shadow: 0 5px 18px #0003;
+  }
+
+  .workspace { position: relative; display: block; }
+
+  .sidebar {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(310px,88vw);
+    transform: translateX(-105%);
+    transition: transform .25s ease;
+    box-shadow: var(--shadow);
+    z-index: 9;
+  }
+
+  .sidebar.open { transform: translateX(0); }
+
+  .map-area { position: absolute; inset: 0; }
+  .map-toolbar { top: 62px; left: 12px; }
+  .map-bottom { left: 12px; bottom: 12px; }
+
+  .legend {
+    right: 12px;
+    bottom: 65px;
+    min-width: 140px;
+    padding: 10px;
+  }
+
+  .inspector {
+    top: 110px;
+    right: 12px;
+    max-height: calc(100% - 125px);
+  }
+
+  .map-chip { padding: 9px 10px; }
+  .mobile-menu { display: inline-grid; place-items: center; }
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <button class="icon-btn mobile-menu" id="menuBtn" aria-label="Open layer menu">☰</button>
+    <div class="brand-mark">⌖</div>
+
+    <div class="brand">
+      <h1>PANDHARPUR GIS</h1>
+      <p>Urban infrastructure explorer</p>
+    </div>
+
+    <div class="header-search">
+      <span class="search-icon">⌕</span>
+      <input id="searchInput" type="search"
+        placeholder="Search roads, hospitals, buildings…"
+        aria-label="Search map features">
+      <button id="searchBtn">Search</button>
+    </div>
+
+    <div class="status">
+      <span class="status-dot"></span>
+      <span id="statusText">Map initializing</span>
+    </div>
+  </header>
+
+  <div class="workspace">
+
+    <aside class="sidebar" id="sidebar">
+      <div class="section-head">
+        <h2>Map workspace</h2>
+        <button class="small-btn" id="resetBtn">Reset view</button>
+      </div>
+
+      <div class="panel-card">
+        <div class="project-row">
+          <div class="project-icon">⌖</div>
+          <div>
+            <strong>Pandharpur City</strong>
+            <span>Spatial data overview</span>
+          </div>
         </div>
-        <script src="resources/qgis2web_expressions.js"></script>
-        <script src="./resources/functions.js"></script>
-        <script src="./resources/ol.js"></script>
-        <script src="./resources/ol-layerswitcher.js"></script>
-        <script src="resources/photon-geocoder-autocomplete.min.js"></script>
-        <script src="resources/olms.js"></script>
-        <script src="layers/pandharpur_city_road_2.js"></script><script src="layers/pandharpurcity_3.js"></script><script src="layers/Hospitals_kmz_4.js"></script><script src="layers/railways_5.js"></script><script src="layers/Buildings_6.js"></script><script src="layers/Waterways_7.js"></script><script src="layers/gis_osm_water_a_free_1_8.js"></script><script src="layers/natural_9.js"></script><script src="layers/water_10.js"></script>
-        <script src="styles/pandharpur_city_road_2_style.js"></script><script src="styles/pandharpurcity_3_style.js"></script><script src="styles/Hospitals_kmz_4_style.js"></script><script src="styles/railways_5_style.js"></script><script src="styles/Buildings_6_style.js"></script><script src="styles/Waterways_7_style.js"></script><script src="styles/gis_osm_water_a_free_1_8_style.js"></script><script src="styles/natural_9_style.js"></script><script src="styles/water_10_style.js"></script>
-        <script src="./layers/layers.js" type="text/javascript"></script> 
-        <script src="./resources/Autolinker.min.js"></script>
-        <script src="./resources/qgis2web.js"></script>
-    </body>
+
+        <div class="stats">
+          <div class="stat">
+            <div class="label">Map layers</div>
+            <div class="value" id="layerCount">—</div>
+          </div>
+          <div class="stat">
+            <div class="label">Visible layers</div>
+            <div class="value" id="visibleCount">—</div>
+          </div>
+          <div class="stat">
+            <div class="label">Loaded features</div>
+            <div class="value" id="featureCount">—</div>
+          </div>
+          <div class="stat">
+            <div class="label">Selected feature</div>
+            <div class="value" id="selectedCount">0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-head">
+        <h2>Layer catalogue</h2>
+        <button class="small-btn" id="allLayersBtn">All on</button>
+      </div>
+
+      <div id="layerList">
+        <p class="empty-state">Loading exported QGIS layers…</p>
+      </div>
+
+      <div class="section-head">
+        <h2>Map key</h2>
+      </div>
+
+      <div class="panel-card">
+        <div class="legend-item"><span class="legend-line"></span>Road network</div>
+        <div class="legend-item"><span class="legend-hospital"></span>Hospitals / healthcare</div>
+        <div class="legend-item"><span class="legend-building"></span>Buildings</div>
+        <div class="legend-item"><span class="legend-dot"></span>Water / natural features</div>
+        <p class="empty-state" style="margin:12px 0 0">
+          Legend symbols are indicative. Actual layer styles remain controlled by the QGIS2Web export.
+        </p>
+      </div>
+    </aside>
+
+    <main class="map-area">
+
+      <div id="map">
+        <div id="popup" class="ol-popup">
+          <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+          <div id="popup-content"></div>
+        </div>
+      </div>
+
+      <div class="map-toolbar">
+        <button class="map-chip" id="zoomDataBtn">⌖ Zoom to data</button>
+        <button class="map-chip" id="legendBtn">▤ Legend</button>
+        <button class="map-chip" id="clearSelectionBtn">× Clear selection</button>
+      </div>
+
+      <div class="map-bottom">
+        <div class="info-pill">
+          <span>COORD</span>
+          <b id="coordText">Move over map</b>
+        </div>
+        <div class="info-pill">
+          <span>FEATURES</span>
+          <b id="mapFeatureCount">—</b>
+        </div>
+      </div>
+
+      <section class="inspector" id="inspector" aria-live="polite">
+        <div class="inspector-head">
+          <div>
+            <div class="eyebrow">Feature inspector</div>
+            <h3 id="featureTitle">Selected feature</h3>
+          </div>
+          <button class="icon-btn" id="closeInspector" aria-label="Close inspector">×</button>
+        </div>
+
+        <div class="inspector-body" id="inspectorBody">
+          <p class="empty-state">Click a feature on the map to inspect its attributes.</p>
+        </div>
+      </section>
+
+      <div class="legend" id="floatingLegend">
+        <h4>Map legend</h4>
+        <div class="legend-item"><span class="legend-line"></span>Roads</div>
+        <div class="legend-item"><span class="legend-hospital"></span>Hospitals</div>
+        <div class="legend-item"><span class="legend-building"></span>Buildings</div>
+        <div class="legend-item"><span class="legend-dot"></span>Water / natural</div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="./resources/qgis2web_expressions.js"></script>
+<script src="./resources/functions.js"></script>
+<script src="./resources/ol.js"></script>
+<script src="./resources/ol-layerswitcher.js"></script>
+<script src="./resources/photon-geocoder-autocomplete.min.js"></script>
+<script src="./resources/olms.js"></script>
+
+<script src="./layers/pandharpur_city_road_2.js"></script>
+<script src="./layers/pandharpurcity_3.js"></script>
+<script src="./layers/Hospitals_kmz_4.js"></script>
+<script src="./layers/railways_5.js"></script>
+<script src="./layers/Buildings_6.js"></script>
+<script src="./layers/Waterways_7.js"></script>
+<script src="./layers/gis_osm_water_a_free_1_8.js"></script>
+<script src="./layers/natural_9.js"></script>
+<script src="./layers/water_10.js"></script>
+
+<script src="./styles/pandharpur_city_road_2_style.js"></script>
+<script src="./styles/pandharpurcity_3_style.js"></script>
+<script src="./styles/Hospitals_kmz_4_style.js"></script>
+<script src="./styles/railways_5_style.js"></script>
+<script src="./styles/Buildings_6_style.js"></script>
+<script src="./styles/Waterways_7_style.js"></script>
+<script src="./styles/gis_osm_water_a_free_1_8_style.js"></script>
+<script src="./styles/natural_9_style.js"></script>
+<script src="./styles/water_10_style.js"></script>
+
+<script src="./layers/layers.js"></script>
+<script src="./resources/Autolinker.min.js"></script>
+<script src="./resources/qgis2web.js"></script>
+
+<script>
+(function () {
+  "use strict";
+
+  const $ = id => document.getElementById(id);
+
+  const state = {
+    map: null,
+    layers: [],
+    selected: 0,
+    initialExtent: null,
+    searchMatches: []
+  };
+
+  function layerName(layer, index) {
+    const props = layer.getProperties ? layer.getProperties() : {};
+    const candidates = [
+      props.title,
+      props.name,
+      props.layerName,
+      props.displayName
+    ];
+
+    for (const value of candidates) {
+      if (typeof value === "string" && value.trim()) {
+        return value.trim();
+      }
+    }
+
+    const source = layer.getSource && layer.getSource();
+    const sourceName = source && source.getParams && source.getParams().LAYERS;
+
+    if (sourceName) {
+      return String(sourceName).split(":").pop().replace(/_/g, " ");
+    }
+
+    return "Map layer " + (index + 1);
+  }
+
+  function classify(name) {
+    const n = name.toLowerCase();
+
+    if (/hospital|health|clinic|medical/.test(n)) {
+      return { group: "Public services", icon: "✚" };
+    }
+
+    if (/road|street|highway|railway|rail/.test(n)) {
+      return { group: "Transport network", icon: "↗" };
+    }
+
+    if (/building|city|boundary|administrative|settlement/.test(n)) {
+      return { group: "Urban fabric", icon: "▦" };
+    }
+
+    if (/water|river|stream|waterway|lake|pond/.test(n)) {
+      return { group: "Hydrology", icon: "≈" };
+    }
+
+    if (/natural|forest|green|landuse|vegetation/.test(n)) {
+      return { group: "Environment", icon: "♧" };
+    }
+
+    return { group: "Other layers", icon: "◇" };
+  }
+
+  function getMap() {
+    if (typeof map !== "undefined" && map && map.getLayers) {
+      return map;
+    }
+
+    if (window.map && window.map.getLayers) {
+      return window.map;
+    }
+
+    return null;
+  }
+
+  function getFeatures(layer) {
+    try {
+      const source = layer.getSource && layer.getSource();
+
+      if (!source) return [];
+
+      if (source.getFeatures) {
+        return source.getFeatures() || [];
+      }
+
+      if (source.getSource && source.getSource().getFeatures) {
+        return source.getSource().getFeatures() || [];
+      }
+    } catch (error) {
+      console.warn("Could not read layer features:", error);
+    }
+
+    return [];
+  }
+
+  function visibleLayers() {
+    return state.layers.filter(item =>
+      item.layer.getVisible && item.layer.getVisible()
+    );
+  }
+
+  function refreshStats() {
+    $("layerCount").textContent = state.layers.length;
+    $("visibleCount").textContent = visibleLayers().length;
+
+    let count = 0;
+
+    state.layers.forEach(item => {
+      count += getFeatures(item.layer).length;
+    });
+
+    $("featureCount").textContent = count.toLocaleString();
+    $("mapFeatureCount").textContent = count.toLocaleString();
+  }
+
+  function buildLayerUI() {
+    const host = $("layerList");
+    host.innerHTML = "";
+
+    const groups = new Map();
+
+    state.layers.forEach(item => {
+      if (!groups.has(item.category.group)) {
+        groups.set(item.category.group, []);
+      }
+
+      groups.get(item.category.group).push(item);
+    });
+
+    for (const [group, items] of groups) {
+      const section = document.createElement("section");
+      section.className = "layer-group";
+
+      const heading = document.createElement("h3");
+      heading.className = "group-title";
+      heading.textContent = group;
+      section.appendChild(heading);
+
+      items.forEach(item => {
+        const row = document.createElement("div");
+        row.className = "layer-row";
+
+        const symbol = document.createElement("div");
+        symbol.className = "layer-symbol";
+        symbol.textContent = item.category.icon;
+
+        const details = document.createElement("div");
+
+        const name = document.createElement("div");
+        name.className = "layer-name";
+        name.textContent = item.name;
+
+        const sub = document.createElement("div");
+        sub.className = "layer-sub";
+        sub.textContent = getFeatures(item.layer).length.toLocaleString() + " features";
+
+        details.append(name, sub);
+
+        const label = document.createElement("label");
+        label.className = "switch";
+        label.title = "Toggle " + item.name;
+
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.checked = !!item.layer.getVisible();
+
+        const slider = document.createElement("span");
+        slider.className = "slider";
+
+        label.append(input, slider);
+
+        input.addEventListener("change", () => {
+          item.layer.setVisible(input.checked);
+          refreshStats();
+        });
+
+        row.append(symbol, details, label);
+        section.appendChild(row);
+
+        const tools = document.createElement("div");
+        tools.className = "layer-tools";
+
+        const opacityLabel = document.createElement("label");
+        const opacityName = document.createElement("span");
+        opacityName.textContent = "Layer opacity";
+
+        const opacityValue = document.createElement("span");
+        opacityValue.textContent = Math.round(
+          (item.layer.getOpacity ? item.layer.getOpacity() : 1) * 100
+        ) + "%";
+
+        opacityLabel.append(opacityName, opacityValue);
+
+        const range = document.createElement("input");
+        range.type = "range";
+        range.min = "0";
+        range.max = "100";
+        range.value = Math.round(
+          (item.layer.getOpacity ? item.layer.getOpacity() : 1) * 100
+        );
+
+        range.addEventListener("input", () => {
+          const value = Number(range.value) / 100;
+
+          if (item.layer.setOpacity) {
+            item.layer.setOpacity(value);
+          }
+
+          opacityValue.textContent = range.value + "%";
+        });
+
+        opacityLabel.addEventListener("click", () => {
+          tools.classList.toggle("open");
+        });
+
+        tools.append(opacityLabel, range);
+        section.appendChild(tools);
+
+        row.addEventListener("dblclick", () => {
+          tools.classList.toggle("open");
+        });
+      });
+
+      host.appendChild(section);
+    }
+  }
+
+  function safeValue(value) {
+    if (value === null || value === undefined || value === "") {
+      return "—";
+    }
+
+    if (typeof value === "object") {
+      try {
+        return JSON.stringify(value);
+      } catch (error) {
+        return String(value);
+      }
+    }
+
+    return String(value);
+  }
+
+  function showFeature(feature, layerLabel) {
+    state.selected++;
+    $("selectedCount").textContent = state.selected;
+
+    const props = feature.getProperties ? feature.getProperties() : {};
+    const geom = feature.getGeometry ? feature.getGeometry() : null;
+    const geomType = geom && geom.getType ? geom.getType() : "Feature";
+
+    const keys = Object.keys(props).filter(key => key !== "geometry");
+
+    const title =
+      props.name ||
+      props.NAME ||
+      props.Name ||
+      props.hospital ||
+      props.Hospital ||
+      props.id ||
+      props.ID ||
+      layerLabel ||
+      "Selected feature";
+
+    $("featureTitle").textContent = safeValue(title);
+
+    const body = $("inspectorBody");
+    body.innerHTML = "";
+
+    const meta = document.createElement("p");
+    meta.className = "empty-state";
+    meta.textContent = layerLabel + " · " + geomType;
+    body.appendChild(meta);
+
+    if (!keys.length) {
+      const empty = document.createElement("p");
+      empty.className = "empty-state";
+      empty.textContent =
+        "This feature has no non-geometry properties in the source data. " +
+        "Its geometry type is " + geomType + ".";
+      body.appendChild(empty);
+    } else {
+      const grid = document.createElement("div");
+      grid.className = "attr-grid";
+
+      keys.forEach(key => {
+        const card = document.createElement("div");
+        card.className = "attr";
+
+        if (safeValue(props[key]).length > 48 || key.length > 22) {
+          card.classList.add("wide");
+        }
+
+        const keyElement = document.createElement("div");
+        keyElement.className = "key";
+        keyElement.textContent = key.replace(/_/g, " ");
+
+        const valueElement = document.createElement("div");
+        valueElement.className = "val";
+        valueElement.textContent = safeValue(props[key]);
+
+        card.append(keyElement, valueElement);
+        grid.appendChild(card);
+      });
+
+      body.appendChild(grid);
+    }
+
+    $("inspector").classList.add("visible");
+  }
+
+  function setStatus(text) {
+    $("statusText").textContent = text;
+  }
+
+  function fitToData() {
+    if (!state.map || !window.ol) return;
+
+    const view = state.map.getView();
+    let extent = null;
+
+    state.layers.forEach(item => {
+      const source = item.layer.getSource && item.layer.getSource();
+
+      try {
+        if (source && source.getExtent) {
+          const e = source.getExtent();
+
+          if (
+            e &&
+            e.length === 4 &&
+            e.every(Number.isFinite) &&
+            e[0] !== Infinity
+          ) {
+            if (!extent) {
+              extent = e.slice();
+            } else if (window.ol.extent && window.ol.extent.extend) {
+              window.ol.extent.extend(extent, e);
+            }
+          }
+        }
+      } catch (error) {
+        console.warn("Could not calculate layer extent:", error);
+      }
+    });
+
+    if (
+      extent &&
+      extent.every(Number.isFinite) &&
+      extent[0] < extent[2] &&
+      extent[1] < extent[3]
+    ) {
+      view.fit(extent, {
+        padding: [60, 60, 60, 60],
+        duration: 450,
+        maxZoom: 17
+      });
+    } else if (state.initialExtent) {
+      view.fit(state.initialExtent, {
+        padding: [50, 50, 50, 50],
+        duration: 450
+      });
+    }
+  }
+
+  function searchFeatures() {
+    const query = $("searchInput").value.trim().toLowerCase();
+
+    if (!query) {
+      setStatus("Enter a search term");
+      return;
+    }
+
+    const matches = [];
+
+    state.layers.forEach(item => {
+      getFeatures(item.layer).forEach(feature => {
+        const props = feature.getProperties ? feature.getProperties() : {};
+
+        const searchableText = Object.keys(props)
+          .filter(key => key !== "geometry")
+          .map(key => safeValue(props[key]))
+          .join(" ")
+          .toLowerCase();
+
+        if (searchableText.includes(query)) {
+          matches.push({ feature, item });
+        }
+      });
+    });
+
+    state.searchMatches = matches;
+
+    if (!matches.length) {
+      setStatus("No matching feature found");
+      return;
+    }
+
+    const hit = matches[0];
+    const geometry = hit.feature.getGeometry && hit.feature.getGeometry();
+
+    if (geometry && state.map) {
+      const extent = geometry.getExtent();
+
+      if (extent && extent.every(Number.isFinite)) {
+        if (extent[0] === extent[2] && extent[1] === extent[3]) {
+          state.map.getView().animate({
+            center: geometry.getCoordinates(),
+            zoom: 17,
+            duration: 450
+          });
+        } else {
+          state.map.getView().fit(extent, {
+            padding: [100, 370, 100, 100],
+            duration: 450,
+            maxZoom: 17
+          });
+        }
+      }
+    }
+
+    showFeature(hit.feature, hit.item.name);
+
+    setStatus(
+      matches.length + " match" +
+      (matches.length === 1 ? "" : "es") + " found"
+    );
+  }
+
+  function init() {
+    state.map = getMap();
+
+    if (!state.map) {
+      setStatus("Map script not initialized");
+
+      $("layerList").innerHTML =
+        '<p class="empty-state">The QGIS2Web map object was not detected. ' +
+        'Keep all exported scripts together and open this page through a local web server.</p>';
+
+      return;
+    }
+
+    const allLayers = state.map.getLayers().getArray();
+
+    state.layers = allLayers
+      .map((layer, index) => {
+        const name = layerName(layer, index);
+
+        return {
+          layer,
+          name,
+          category: classify(name)
+        };
+      })
+      .filter(item => item.layer && item.layer.getSource);
+
+    try {
+      state.initialExtent = state.map.getView().calculateExtent(
+        state.map.getSize()
+      );
+    } catch (error) {
+      state.initialExtent = null;
+    }
+
+    buildLayerUI();
+    refreshStats();
+
+    setStatus("Map ready · " + state.layers.length + " layers");
+
+    state.map.on("singleclick", function (event) {
+      let found = false;
+
+      state.map.forEachFeatureAtPixel(
+        event.pixel,
+        function (feature, layer) {
+          const item =
+            state.layers.find(entry => entry.layer === layer) ||
+            state.layers.find(entry =>
+              getFeatures(entry.layer).includes(feature)
+            );
+
+          showFeature(
+            feature,
+            item ? item.name : "Map feature"
+          );
+
+          found = true;
+          return true;
+        },
+        { hitTolerance: 5 }
+      );
+    });
+
+    state.map.on("pointermove", function (event) {
+      if (event.dragging) return;
+
+      try {
+        const coordinates = window.ol.proj.toLonLat(event.coordinate);
+
+        $("coordText").textContent =
+          coordinates[1].toFixed(5) + ", " +
+          coordinates[0].toFixed(5);
+      } catch (error) {
+        $("coordText").textContent = "Coordinates unavailable";
+      }
+    });
+
+    if (state.map.updateSize) {
+      setTimeout(() => state.map.updateSize(), 120);
+    }
+  }
+
+  $("searchBtn").addEventListener("click", searchFeatures);
+
+  $("searchInput").addEventListener("keydown", event => {
+    if (event.key === "Enter") searchFeatures();
+  });
+
+  $("resetBtn").addEventListener("click", fitToData);
+  $("zoomDataBtn").addEventListener("click", fitToData);
+
+  $("allLayersBtn").addEventListener("click", () => {
+    const turnOn = $("allLayersBtn").textContent === "All on";
+
+    state.layers.forEach(item => {
+      item.layer.setVisible(turnOn);
+    });
+
+    $("allLayersBtn").textContent = turnOn ? "All off" : "All on";
+
+    buildLayerUI();
+    refreshStats();
+  });
+
+  $("clearSelectionBtn").addEventListener("click", () => {
+    $("inspector").classList.remove("visible");
+    $("selectedCount").textContent = "0";
+    state.selected = 0;
+  });
+
+  $("closeInspector").addEventListener("click", () => {
+    $("inspector").classList.remove("visible");
+  });
+
+  $("legendBtn").addEventListener("click", () => {
+    const legend = $("floatingLegend");
+
+    legend.style.display =
+      legend.style.display === "none" ? "block" : "none";
+  });
+
+  $("menuBtn").addEventListener("click", () => {
+    $("sidebar").classList.toggle("open");
+  });
+
+  window.addEventListener("resize", () => {
+    if (state.map && state.map.updateSize) {
+      state.map.updateSize();
+    }
+  });
+
+  let attempts = 0;
+
+  const boot = setInterval(() => {
+    attempts++;
+
+    if (getMap()) {
+      clearInterval(boot);
+      init();
+    } else if (attempts >= 30) {
+      clearInterval(boot);
+      init();
+    }
+  }, 100);
+})();
+</script>
+</body>
 </html>
